@@ -1,0 +1,6 @@
+.env
+/.venv/
+/workspace/sessions/*
+/workspace/skills/*
+/__pycache__/
+/agent/__pycache__/
