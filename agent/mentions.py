@@ -11,6 +11,18 @@ from .tools import ToolRunner
 
 def mentions_tick(settings: Settings, runner: AgentRunner, tool_runner: ToolRunner) -> None:
     log = logging.getLogger("agent")
+    if not tool_runner.is_tool_enabled("x_get_mentions"):
+        log.info("Mentions tick skipped: x_get_mentions tool is disabled")
+        return
+    if not tool_runner.is_tool_enabled("x_create_post"):
+        log.info("Mentions tick skipped: x_create_post tool is disabled")
+        return
+    if not tool_runner.is_tool_ready("x_get_mentions"):
+        log.info("Mentions tick skipped: mentions credentials are not configured")
+        return
+    if not tool_runner.is_tool_ready("x_create_post"):
+        log.info("Mentions tick skipped: posting credentials are not configured")
+        return
     if not settings.x_user_id:
         log.info("Mentions tick skipped: X_USER_ID is not configured")
         return

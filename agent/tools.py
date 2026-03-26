@@ -2,7 +2,7 @@ import requests as req
 
 from .config import Settings
 
-TOOLS = [
+BASE_TOOLS = [
     {
         "name": "file",
         "description": "Read or write a file inside workspace/. Use op=read or op=write.",
@@ -83,8 +83,13 @@ class ToolRunner:
         self._settings = settings
         self._workspace_root = settings.workspace.resolve()
         self._cached_app_bearer_token: str | None = settings.x_bearer_token
+        self._known_tool_names = {tool["name"] for tool in BASE_TOOLS}
 
     def run(self, name: str, params: dict) -> str:
+        if not self.is_tool_enabled(name):
+            return f"ERROR: Tool '{name}' is disabled by configuration."
+        if not self.is_tool_ready(name):
+            return f"ERROR: Tool '{name}' is not ready (missing required credentials)."
         if name == "file":
             return self._run_file_tool(params)
         if name == "http":
@@ -94,6 +99,39 @@ class ToolRunner:
         if name == "x_get_mentions":
             return self._run_x_get_mentions_tool(params)
         return f"Unknown tool: {name}"
+
+    def available_tool_specs(self) -> list[dict]:
+        return [
+            tool
+            for tool in BASE_TOOLS
+            if self.is_tool_enabled(tool["name"]) and self.is_tool_ready(tool["name"])
+        ]
+
+    def is_tool_enabled(self, name: str) -> bool:
+        n = name.strip().lower()
+        if n not in self._known_tool_names:
+            return False
+        if n.startswith("x_") and not self._settings.twitter_tool_enabled:
+            return False
+        if self._settings.enabled_tools and n not in self._settings.enabled_tools:
+            return False
+        if n in self._settings.disabled_tools:
+            return False
+        return True
+
+    def is_tool_ready(self, name: str) -> bool:
+        n = name.strip().lower()
+        if n in {"file", "http"}:
+            return True
+        if n == "x_create_post":
+            return bool(self._settings.x_oauth2_user_token)
+        if n == "x_get_mentions":
+            return bool(
+                self._settings.x_bearer_token
+                or self._cached_app_bearer_token
+                or (self._settings.x_client_id and self._settings.x_client_secret)
+            )
+        return False
 
     def _run_file_tool(self, params: dict) -> str:
         op = params["op"]

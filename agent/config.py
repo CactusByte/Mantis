@@ -5,6 +5,18 @@ from pathlib import Path
 from dotenv import load_dotenv
 
 
+def _parse_csv_set(value: str | None) -> set[str]:
+    if not value:
+        return set()
+    return {item.strip().lower() for item in value.split(",") if item.strip()}
+
+
+def _parse_bool(value: str | None, default: bool = False) -> bool:
+    if value is None:
+        return default
+    return value.strip().lower() in {"1", "true", "yes", "on"}
+
+
 @dataclass(frozen=True)
 class Settings:
     anthropic_api_key: str
@@ -20,6 +32,9 @@ class Settings:
     x_client_secret: str | None
     x_user_id: str | None
     mentions_check_minutes: int
+    enabled_tools: set[str]
+    disabled_tools: set[str]
+    twitter_tool_enabled: bool
 
 
 def load_settings() -> Settings:
@@ -49,6 +64,9 @@ def load_settings() -> Settings:
         x_client_secret=os.environ.get("X_CLIENT_SECRET"),
         x_user_id=os.environ.get("X_USER_ID"),
         mentions_check_minutes=int(os.environ.get("MENTIONS_CHECK_MINUTES", 15)),
+        enabled_tools=_parse_csv_set(os.environ.get("ENABLED_TOOLS")),
+        disabled_tools=_parse_csv_set(os.environ.get("DISABLED_TOOLS")),
+        twitter_tool_enabled=_parse_bool(os.environ.get("TWITTER_TOOL"), default=True),
     )
 
 

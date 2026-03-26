@@ -5,7 +5,7 @@ import anthropic
 
 from .config import Settings
 from .storage import SessionStore
-from .tools import TOOLS, ToolRunner
+from .tools import ToolRunner
 
 
 class AgentRunner:
@@ -37,11 +37,12 @@ class AgentRunner:
         final_reply = None
 
         while True:
+            tools = self._tool_runner.available_tool_specs()
             response = self._claude.messages.create(
                 model=self._settings.model,
                 max_tokens=1024,
                 system=system,
-                tools=TOOLS,
+                tools=tools,
                 messages=messages,
             )
 
