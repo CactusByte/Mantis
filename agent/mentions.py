@@ -42,7 +42,7 @@ def mentions_tick(settings: Settings, runner: AgentRunner, tool_runner: ToolRunn
         log.error(f"Mentions tick: failed to draft reply for {mention_id}: {exc}")
         return
 
-    user_token = tool_runner._resolve_x_oauth2_user_token({})
+    user_token = tool_runner.resolve_x_oauth2_user({})
     if not user_token:
         log.error("Mentions tick: missing OAuth2 user token for posting replies")
         return
@@ -72,7 +72,7 @@ def mentions_tick(settings: Settings, runner: AgentRunner, tool_runner: ToolRunn
 
 
 def _fetch_latest_unprocessed_mention(settings: Settings, tool_runner: ToolRunner) -> dict | None:
-    token = tool_runner._resolve_x_token({})
+    token = tool_runner.resolve_x_bearer({})
     if not token:
         return None
 

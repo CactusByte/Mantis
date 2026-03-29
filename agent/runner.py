@@ -1,4 +1,5 @@
 import logging
+import threading
 from datetime import datetime, timezone
 
 import anthropic
@@ -14,6 +15,7 @@ class AgentRunner:
         self._store = store
         self._tool_runner = tool_runner
         self._claude = anthropic.Anthropic(api_key=settings.anthropic_api_key)
+        self._anthropic_lock = threading.Lock()
         self._log = logging.getLogger("agent")
 
     def run(self, session_id: str, user_text: str | None = None) -> str | None:
@@ -38,13 +40,14 @@ class AgentRunner:
 
         while True:
             tools = self._tool_runner.available_tool_specs()
-            response = self._claude.messages.create(
-                model=self._settings.model,
-                max_tokens=1024,
-                system=system,
-                tools=tools,
-                messages=messages,
-            )
+            with self._anthropic_lock:
+                response = self._claude.messages.create(
+                    model=self._settings.model,
+                    max_tokens=1024,
+                    system=system,
+                    tools=tools,
+                    messages=messages,
+                )
 
             content = [block.model_dump() for block in response.content]
             messages.append({"role": "assistant", "content": content})
@@ -112,12 +115,13 @@ If this is a heartbeat and nothing needs doing, reply with exactly: HEARTBEAT_OK
             f"Start with this prefix exactly if provided: {prefix!r}\n"
             "Do not include links unless the mention explicitly asks for one."
         )
-        response = self._claude.messages.create(
-            model=self._settings.model,
-            max_tokens=180,
-            system=system,
-            messages=[{"role": "user", "content": user}],
-        )
+        with self._anthropic_lock:
+            response = self._claude.messages.create(
+                model=self._settings.model,
+                max_tokens=180,
+                system=system,
+                messages=[{"role": "user", "content": user}],
+            )
         text = ""
         for block in response.content:
             if hasattr(block, "text"):

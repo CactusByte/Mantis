@@ -21,6 +21,7 @@ def _parse_bool(value: str | None, default: bool = False) -> bool:
 class Settings:
     anthropic_api_key: str
     telegram_bot_token: str
+    telegram_default_chat_id: str | None
     allowed_users: set[str]
     heartbeat_minutes: int
     workspace: Path
@@ -35,6 +36,16 @@ class Settings:
     enabled_tools: set[str]
     disabled_tools: set[str]
     twitter_tool_enabled: bool
+    supabase_url: str | None
+    supabase_service_key: str | None
+    google_client_id: str | None
+    google_client_secret: str | None
+    google_refresh_token: str | None
+    firecrawl_api_key: str | None
+    tavily_api_key: str | None
+    e2b_api_key: str | None
+    modal_webhook_url: str | None
+    modal_webhook_bearer: str | None
 
 
 def load_settings() -> Settings:
@@ -46,9 +57,14 @@ def load_settings() -> Settings:
     raw_users = os.environ.get("TELEGRAM_ALLOWED_USERS", "")
     allowed_users = {u.strip() for u in raw_users.split(",") if u.strip()}
 
+    supabase_key = os.environ.get("SUPABASE_SERVICE_ROLE_KEY") or os.environ.get(
+        "SUPABASE_ANON_KEY"
+    )
+
     return Settings(
         anthropic_api_key=os.environ["ANTHROPIC_API_KEY"],
         telegram_bot_token=os.environ["TELEGRAM_BOT_TOKEN"],
+        telegram_default_chat_id=os.environ.get("TELEGRAM_DEFAULT_CHAT_ID"),
         allowed_users=allowed_users,
         heartbeat_minutes=int(os.environ.get("HEARTBEAT_MINUTES", 30)),
         workspace=workspace,
@@ -67,6 +83,16 @@ def load_settings() -> Settings:
         enabled_tools=_parse_csv_set(os.environ.get("ENABLED_TOOLS")),
         disabled_tools=_parse_csv_set(os.environ.get("DISABLED_TOOLS")),
         twitter_tool_enabled=_parse_bool(os.environ.get("TWITTER_TOOL"), default=True),
+        supabase_url=os.environ.get("SUPABASE_URL"),
+        supabase_service_key=supabase_key,
+        google_client_id=os.environ.get("GOOGLE_CLIENT_ID"),
+        google_client_secret=os.environ.get("GOOGLE_CLIENT_SECRET"),
+        google_refresh_token=os.environ.get("GOOGLE_REFRESH_TOKEN"),
+        firecrawl_api_key=os.environ.get("FIRECRAWL_API_KEY"),
+        tavily_api_key=os.environ.get("TAVILY_API_KEY"),
+        e2b_api_key=os.environ.get("E2B_API_KEY"),
+        modal_webhook_url=os.environ.get("MODAL_WEBHOOK_URL"),
+        modal_webhook_bearer=os.environ.get("MODAL_WEBHOOK_BEARER"),
     )
 
 

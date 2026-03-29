@@ -15,6 +15,7 @@ from .tools import ToolRunner
 
 def main() -> None:
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
+    logging.getLogger("httpx").setLevel(logging.WARNING)
     log = logging.getLogger("agent")
 
     settings = load_settings()

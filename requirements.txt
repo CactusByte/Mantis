@@ -1,5 +1,8 @@
 anthropic
-python-telegram-bot==20.7
+python-telegram-bot==22.7
 apscheduler
 python-dotenv
 requests
+# PTB v21+ and e2b-code-interpreter both need httpx 0.27+ (PTB 20.7 pinned 0.25.x and conflicted).
+httpx>=0.27,<1
+e2b-code-interpreter
