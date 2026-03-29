@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Mantis — System Architecture</title>
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: #0d1117;
+      color: #e6edf3;
+      padding: 32px;
+    }
+    h1 {
+      font-size: 1.6rem;
+      font-weight: 700;
+      color: #58a6ff;
+      margin-bottom: 4px;
+    }
+    .subtitle {
+      font-size: 0.9rem;
+      color: #8b949e;
+      margin-bottom: 32px;
+    }
+    .diagram-container {
+      background: #161b22;
+      border: 1px solid #30363d;
+      border-radius: 12px;
+      padding: 32px;
+      margin-bottom: 40px;
+      overflow-x: auto;
+    }
+    .diagram-container h2 {
+      font-size: 1rem;
+      font-weight: 600;
+      color: #8b949e;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      margin-bottom: 20px;
+    }
+    .mermaid {
+      display: flex;
+      justify-content: center;
+    }
+    .legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-top: 24px;
+    }
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.8rem;
+      color: #8b949e;
+    }
+    .legend-dot {
+      width: 12px;
+      height: 12px;
+      border-radius: 3px;
+      flex-shrink: 0;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+      margin-bottom: 40px;
+    }
+    .card {
+      background: #161b22;
+      border: 1px solid #30363d;
+      border-radius: 12px;
+      padding: 24px;
+    }
+    .card h2 {
+      font-size: 1rem;
+      font-weight: 600;
+      color: #8b949e;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      margin-bottom: 16px;
+    }
+    .flow-step {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+    .step-num {
+      background: #1f6feb;
+      color: #fff;
+      font-size: 0.75rem;
+      font-weight: 700;
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      margin-top: 1px;
+    }
+    .step-text {
+      font-size: 0.85rem;
+      color: #c9d1d9;
+      line-height: 1.5;
+    }
+    .step-text code {
+      background: #21262d;
+      padding: 1px 5px;
+      border-radius: 4px;
+      font-size: 0.8rem;
+      color: #79c0ff;
+    }
+    .tool-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+    .tool-badge {
+      background: #21262d;
+      border: 1px solid #30363d;
+      border-radius: 6px;
+      padding: 6px 10px;
+      font-size: 0.78rem;
+      color: #c9d1d9;
+    }
+    .tool-badge span {
+      display: block;
+      font-size: 0.68rem;
+      color: #6e7681;
+      margin-top: 2px;
+    }
+    .always { border-left: 3px solid #3fb950; }
+    .conditional { border-left: 3px solid #d29922; }
+    @media (max-width: 900px) { .grid { grid-template-columns: 1fr; } }
+  </style>
+</head>
+<body>
+
+<h1>Mantis</h1>
+<p class="subtitle">Autonomous Agent Runtime — System Architecture</p>
+
+<!-- Main Architecture Diagram -->
+<div class="diagram-container">
+  <h2>System Overview</h2>
+  <div class="mermaid">
+graph TD
+    %% Entry Points
+    TG["📱 Telegram Bot\n(python-telegram-bot v22.7)\nPolling loop"]
+    SCHED["⏰ APScheduler\nBackground daemon"]
+
+    %% Triggers
+    HB["💓 Heartbeat\nevery N min\nheartbeat.py"]
+    MN["🐦 X Mentions\nevery 3 min\nmentions.py"]
+
+    %% Core
+    BOOT["🚀 bootstrap.py\nStartup & scheduling"]
+    RUNNER["🧠 AgentRunner\nrunner.py\nAgentic loop"]
+    STORE["💾 SessionStore\nstorage.py\nJSON sessions"]
+
+    %% Workspace Files
+    WS["📂 workspace/\nSOUL.md\nHEARTBEAT.md\nMEMORY.md\nsessions/"]
+
+    %% Claude
+    CLAUDE["✨ Anthropic Claude\nclaude-sonnet-4-6\nTool-use API"]
+
+    %% Tool Runner
+    TR["🔧 ToolRunner\ntools/__init__.py\nEnable/disable via env"]
+
+    %% Tool Groups
+    TCORE["Built-in Tools\nfile · http\nx_create_post · x_get_mentions"]
+    TAPI["API Tools\nsupabase_rest · gmail\ngoogle_calendar · firecrawl\ntavily_search · e2b_run\ntelegram_send · modal_webhook"]
+
+    %% External Services
+    EXT_X["🐦 X / Twitter\nAPI v2"]
+    EXT_DB["🗄️ Supabase\nPostgREST"]
+    EXT_G["📧 Google\nGmail + Calendar"]
+    EXT_FC["🔥 Firecrawl\nWeb scraping"]
+    EXT_TV["🔍 Tavily\nWeb search"]
+    EXT_E2B["⚗️ E2B\nCode sandbox"]
+    EXT_MODAL["🪝 Modal\nWebhooks"]
+
+    %% Flow
+    TG -->|"user message"| BOOT
+    SCHED --> HB
+    SCHED --> MN
+    BOOT --> RUNNER
+    HB --> RUNNER
+    MN --> RUNNER
+
+    RUNNER -->|"load/save session"| STORE
+    STORE <-->|"read/write files"| WS
+    RUNNER -->|"system prompt files"| WS
+
+    RUNNER -->|"messages + tools"| CLAUDE
+    CLAUDE -->|"text or tool_use"| RUNNER
+
+    RUNNER -->|"dispatch tool calls"| TR
+    TR --> TCORE
+    TR --> TAPI
+
+    TCORE -->|"HTTP"| EXT_X
+    TAPI -->|"REST"| EXT_DB
+    TAPI -->|"OAuth2"| EXT_G
+    TAPI -->|"API"| EXT_FC
+    TAPI -->|"API"| EXT_TV
+    TAPI -->|"API"| EXT_E2B
+    TAPI -->|"POST"| EXT_MODAL
+    TAPI -->|"Bot API"| TG
+
+    MN -->|"post reply"| EXT_X
+
+    %% Styles
+    classDef entry fill:#1f4e79,stroke:#58a6ff,color:#e6edf3
+    classDef core fill:#1a3a1a,stroke:#3fb950,color:#e6edf3
+    classDef claude fill:#4a1e6e,stroke:#bc8cff,color:#e6edf3
+    classDef tools fill:#3a2a00,stroke:#d29922,color:#e6edf3
+    classDef external fill:#1e2a1e,stroke:#6e7681,color:#c9d1d9
+    classDef storage fill:#1e2535,stroke:#79c0ff,color:#e6edf3
+
+    class TG,SCHED entry
+    class BOOT,RUNNER,HB,MN core
+    class CLAUDE claude
+    class TR,TCORE,TAPI tools
+    class EXT_X,EXT_DB,EXT_G,EXT_FC,EXT_TV,EXT_E2B,EXT_MODAL external
+    class STORE,WS storage
+  </div>
+</div>
+
+<!-- Agent Loop Diagram -->
+<div class="diagram-container">
+  <h2>Agent Execution Loop (runner.py)</h2>
+  <div class="mermaid">
+sequenceDiagram
+    participant C as Caller<br/>(Telegram / Scheduler)
+    participant R as AgentRunner
+    participant S as SessionStore
+    participant W as workspace/
+    participant CL as Claude API
+    participant TR as ToolRunner
+
+    C->>R: run(session_id, text)
+    R->>W: read SOUL.md + HEARTBEAT.md + MEMORY.md
+    R->>S: load session history
+    R->>R: append user message
+    loop Agentic Loop
+        R->>CL: messages + tool schemas
+        CL-->>R: response (text | tool_use)
+        alt tool_use
+            R->>TR: run(tool_name, params)
+            TR-->>R: tool result
+            R->>R: append tool result
+        else end_turn
+            R->>S: save session
+            R->>W: append to MEMORY.md
+            R-->>C: reply text
+        end
+    end
+  </div>
+</div>
+
+<div class="grid">
+
+  <!-- Request Flows -->
+  <div class="card">
+    <h2>Request Flows</h2>
+
+    <p style="font-size:0.78rem;color:#6e7681;margin-bottom:12px;font-weight:600;">TELEGRAM USER MESSAGE</p>
+    <div class="flow-step"><div class="step-num">1</div><div class="step-text">User sends message to Telegram bot</div></div>
+    <div class="flow-step"><div class="step-num">2</div><div class="step-text"><code>telegram_channel.py</code> validates user allowlist</div></div>
+    <div class="flow-step"><div class="step-num">3</div><div class="step-text"><code>runner.run("dm:telegram:{user}", text)</code></div></div>
+    <div class="flow-step"><div class="step-num">4</div><div class="step-text">Claude loop → tools → reply text</div></div>
+    <div class="flow-step"><div class="step-num">5</div><div class="step-text">Reply sent back via Telegram</div></div>
+
+    <hr style="border-color:#30363d;margin:16px 0">
+
+    <p style="font-size:0.78rem;color:#6e7681;margin-bottom:12px;font-weight:600;">HEARTBEAT (every N min)</p>
+    <div class="flow-step"><div class="step-num">1</div><div class="step-text">APScheduler fires <code>heartbeat_tick()</code></div></div>
+    <div class="flow-step"><div class="step-num">2</div><div class="step-text">Agent checks HEARTBEAT.md standing goals</div></div>
+    <div class="flow-step"><div class="step-num">3</div><div class="step-text">Takes autonomous actions via tools</div></div>
+
+    <hr style="border-color:#30363d;margin:16px 0">
+
+    <p style="font-size:0.78rem;color:#6e7681;margin-bottom:12px;font-weight:600;">X MENTIONS (every 3 min)</p>
+    <div class="flow-step"><div class="step-num">1</div><div class="step-text">APScheduler fires <code>mentions_tick()</code></div></div>
+    <div class="flow-step"><div class="step-num">2</div><div class="step-text">Fetch new mentions via X API v2</div></div>
+    <div class="flow-step"><div class="step-num">3</div><div class="step-text">Claude drafts reply text</div></div>
+    <div class="flow-step"><div class="step-num">4</div><div class="step-text">Auto-post reply to X</div></div>
+  </div>
+
+  <!-- Tools Inventory -->
+  <div class="card">
+    <h2>Tools Inventory</h2>
+    <p style="font-size:0.78rem;color:#3fb950;margin-bottom:8px;font-weight:600;">ALWAYS ENABLED</p>
+    <div class="tool-grid" style="margin-bottom:16px">
+      <div class="tool-badge always">file<span>Read/write workspace/</span></div>
+      <div class="tool-badge always">http<span>GET/POST any URL</span></div>
+      <div class="tool-badge always">x_create_post<span>Tweet via OAuth2</span></div>
+      <div class="tool-badge always">x_get_mentions<span>Fetch mentions</span></div>
+    </div>
+
+    <p style="font-size:0.78rem;color:#d29922;margin-bottom:8px;font-weight:600;">CONDITIONAL (requires API keys)</p>
+    <div class="tool-grid">
+      <div class="tool-badge conditional">supabase_rest<span>PostgREST CRUD</span></div>
+      <div class="tool-badge conditional">gmail<span>List/send email</span></div>
+      <div class="tool-badge conditional">google_calendar<span>Events CRUD</span></div>
+      <div class="tool-badge conditional">firecrawl_scrape<span>Web scraping</span></div>
+      <div class="tool-badge conditional">tavily_search<span>Web search</span></div>
+      <div class="tool-badge conditional">e2b_run<span>Python sandbox</span></div>
+      <div class="tool-badge conditional">telegram_send<span>Send messages</span></div>
+      <div class="tool-badge conditional">modal_webhook<span>Custom webhooks</span></div>
+    </div>
+
+    <div style="margin-top:16px;padding:10px;background:#21262d;border-radius:6px;font-size:0.78rem;color:#8b949e;line-height:1.6">
+      Tools gated by <code style="color:#79c0ff">ENABLED_TOOLS</code> / <code style="color:#79c0ff">DISABLED_TOOLS</code> env vars<br>
+      and <code style="color:#79c0ff">is_ready()</code> credential check at startup
+    </div>
+  </div>
+
+</div>
+
+<!-- Stack & Config -->
+<div class="diagram-container">
+  <h2>Stack &amp; Configuration</h2>
+  <div class="mermaid">
+graph LR
+    subgraph Runtime["🐍 Python Runtime"]
+        MAIN["main.py\nEntry point"]
+        BOOT2["bootstrap.py\nInit + APScheduler"]
+        CFG["config.py\nSettings dataclass\n.env via dotenv"]
+    end
+
+    subgraph Persistence["💾 Persistence (workspace/)"]
+        SOUL["SOUL.md\nPersonality / system prompt"]
+        HBF["HEARTBEAT.md\nStanding goals"]
+        MEM["MEMORY.md\nAppend-only log"]
+        SESS["sessions/\nPer-user JSON history"]
+        MST["mentions_state.json\nLast seen mention ID"]
+    end
+
+    subgraph Deps["📦 Key Dependencies"]
+        ANT["anthropic\nClaude API client"]
+        PTB["python-telegram-bot v22.7\nAsync Telegram"]
+        APS["apscheduler\nBackground jobs"]
+        E2B2["e2b-code-interpreter\nSandboxed exec"]
+        DOT["python-dotenv\nEnv config"]
+    end
+
+    MAIN --> BOOT2
+    BOOT2 --> CFG
+    CFG --> Deps
+    BOOT2 --> Persistence
+
+    classDef runtimeC fill:#1a3a1a,stroke:#3fb950,color:#e6edf3
+    classDef persC fill:#1e2535,stroke:#79c0ff,color:#e6edf3
+    classDef depsC fill:#3a2a00,stroke:#d29922,color:#e6edf3
+
+    class MAIN,BOOT2,CFG runtimeC
+    class SOUL,HBF,MEM,SESS,MST persC
+    class ANT,PTB,APS,E2B2,DOT depsC
+  </div>
+</div>
+
+<script>
+  mermaid.initialize({
+    startOnLoad: true,
+    theme: 'dark',
+    themeVariables: {
+      background: '#161b22',
+      primaryColor: '#1f6feb',
+      primaryTextColor: '#e6edf3',
+      primaryBorderColor: '#58a6ff',
+      lineColor: '#8b949e',
+      secondaryColor: '#21262d',
+      tertiaryColor: '#0d1117',
+      fontFamily: 'Segoe UI, sans-serif',
+      fontSize: '14px'
+    },
+    flowchart: { curve: 'basis', padding: 20 },
+    sequence: { actorMargin: 80, messageMargin: 60 }
+  });
+</script>
+</body>
+</html>

@@ -4,5 +4,4 @@
 /workspace/skills/*
 /__pycache__/
 /agent/__pycache__/
-/workspace/mentions_state.json
 agent/tools/__pycache__/

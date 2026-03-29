@@ -4,6 +4,7 @@ from datetime import datetime, timezone
 
 import anthropic
 
+from .anthropic_retry import messages_create_with_rate_limit
 from .config import Settings
 from .storage import SessionStore
 from .tools import ToolRunner
@@ -14,7 +15,11 @@ class AgentRunner:
         self._settings = settings
         self._store = store
         self._tool_runner = tool_runner
-        self._claude = anthropic.Anthropic(api_key=settings.anthropic_api_key)
+        # Disable SDK auto-retry so 429s use our Retry-After-aware backoff (SDK caps Retry-After at 60s).
+        self._claude = anthropic.Anthropic(
+            api_key=settings.anthropic_api_key,
+            max_retries=0,
+        )
         self._anthropic_lock = threading.Lock()
         self._log = logging.getLogger("agent")
 
@@ -40,14 +45,18 @@ class AgentRunner:
 
         while True:
             tools = self._tool_runner.available_tool_specs()
-            with self._anthropic_lock:
-                response = self._claude.messages.create(
-                    model=self._settings.model,
-                    max_tokens=1024,
-                    system=system,
-                    tools=tools,
-                    messages=messages,
-                )
+
+            def _one_turn():
+                with self._anthropic_lock:
+                    return self._claude.messages.create(
+                        model=self._settings.model,
+                        max_tokens=1024,
+                        system=system,
+                        tools=tools,
+                        messages=messages,
+                    )
+
+            response = messages_create_with_rate_limit(_one_turn, log=self._log)
 
             content = [block.model_dump() for block in response.content]
             messages.append({"role": "assistant", "content": content})
@@ -115,13 +124,16 @@ If this is a heartbeat and nothing needs doing, reply with exactly: HEARTBEAT_OK
             f"Start with this prefix exactly if provided: {prefix!r}\n"
             "Do not include links unless the mention explicitly asks for one."
         )
-        with self._anthropic_lock:
-            response = self._claude.messages.create(
-                model=self._settings.model,
-                max_tokens=180,
-                system=system,
-                messages=[{"role": "user", "content": user}],
-            )
+        def _draft():
+            with self._anthropic_lock:
+                return self._claude.messages.create(
+                    model=self._settings.model,
+                    max_tokens=180,
+                    system=system,
+                    messages=[{"role": "user", "content": user}],
+                )
+
+        response = messages_create_with_rate_limit(_draft, log=self._log)
         text = ""
         for block in response.content:
             if hasattr(block, "text"):
